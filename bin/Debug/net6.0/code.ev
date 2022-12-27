@@ -1,0 +1,4 @@
+import(Math)
+import(Random)
+
+print(round(rand(1; 10); 0))

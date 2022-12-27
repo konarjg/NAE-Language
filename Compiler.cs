@@ -71,6 +71,7 @@ public static class Compiler
     private static List<string> Operators = new() { "<", ">", "<=", ">=", "==", "!=", "^^", "||", "&", "^", "*", "/", "+", "-" };
     private static List<string> KeyWords = new() { "break", "continue" };
 
+    private static List<Library> Libraries = new() { new Math(), new Random() };
     private static Dictionary<string, int> ExecutionOrder = new()
     {
         { "&", 3 },
@@ -112,6 +113,19 @@ public static class Compiler
         {
             switch (token)
             {
+                case string s when s == "import":
+                    tokens.Dequeue();
+                    var libName = tokens.Dequeue();
+                    tokens.Dequeue();
+
+                    if (Libraries.Find(lib => lib.Name == libName) == null)
+                        throw new Exception("LIBRARY DOESN'T EXIST!");
+
+                    Functions.AddRange(Libraries.Find(lib => lib.Name == libName).Functions);
+                    Variables.AddRange(Libraries.Find(lib => lib.Name == libName).Constants);
+                    Libraries.Find(lib => lib.Name == libName).Imported = true;
+                    break;
+
                 case string s when float.TryParse(s, out number):
                     output.Enqueue(s);
                     break;
@@ -273,10 +287,37 @@ public static class Compiler
                     }
                     catch (Exception e)
                     {
-                        if (e.Message != "void")
+                        if (e.Message == "WRONG FUNCTION NAME!")
+                        {
+                            var exceptions = new List<Exception>();
+
+                            for (int i = 0; i < Libraries.Count; ++i)
+                            {
+                                if (Libraries[i].Imported)
+                                {
+                                    try
+                                    {
+                                        stack.Push(Libraries[i].ExecuteFunction(s, ref stack).ToString());
+                                    }
+                                    catch (Exception e1)
+                                    {
+                                        exceptions.Add(e1);
+                                    }
+                                }
+                            }
+
+                            if (exceptions.Count == Libraries.Count)
+                            {
+                                for (int i = 0; i < exceptions.Count; ++i)
+                                {
+                                    if (exceptions[i].Message != "void")
+                                        Console.WriteLine(exceptions[i].Message);
+                                }
+                            }    
+                        }
+                        else if (e.Message != "void")
                             Console.WriteLine(e.Message);
                     }
-
                     break;
 
                 default:
@@ -369,12 +410,40 @@ public static class Compiler
                     {
                         stack.Push(ExecuteFunction(s, ref stack).ToString());
                     }
-                    catch (Exception e) 
+                    catch (Exception e)
                     {
-                        if (e.Message != "void")
+                        if (e.Message == "WRONG FUNCTION NAME!")
+                        {
+                            var exceptions = new List<Exception>();
+
+                            for (int i = 0; i < Libraries.Count; ++i)
+                            {
+                                if (Libraries[i].Imported)
+                                {
+                                    try
+                                    {
+                                        stack.Push(Libraries[i].ExecuteFunction(s, ref stack).ToString());
+                                    }
+                                    catch (Exception e1)
+                                    {
+                                        exceptions.Add(e1);
+                                    }
+                                }
+                            }
+
+                            if (exceptions.Count == Libraries.Count)
+                            {
+                                for (int i = 0; i < exceptions.Count; ++i)
+                                {
+                                    if (exceptions[i].Message != "void")
+                                        Console.WriteLine(exceptions[i].Message);
+                                }
+                            }
+                        }
+                        else if (e.Message != "void")
                             Console.WriteLine(e.Message);
                     }
-                    
+
                     break;
 
                 default:
