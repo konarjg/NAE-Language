@@ -67,8 +67,8 @@ public class Function
 public static class Compiler
 {
     private static List<string> DataTypes = new() { "num", "text", "char", "flag" };
-    private static List<string> Functions = new() { "array", "exec", "func", "while", "if", "elseif", "else", "equals", "get", "set", "print", "read" };
-    private static List<string> Operators = new() { "<", ">", "<=", ">=", "==", "!=", "^^", "||", "&", "^", "*", "/", "+", "-" };
+    private static List<string> Functions = new() { "array", "exec", "func", "while", "if", "elseif", "else", "equals", "get", "set", "printLine", "print", "read" };
+    private static List<string> Operators = new() { "<", ">", "<=", ">=", "==", "!=", "^^", "||", "&", "^", "*", "/", "%", "+", "-" };
     private static List<string> KeyWords = new() { "break", "continue" };
 
     private static List<Library> Libraries = new() { new Math(), new Random() };
@@ -86,6 +86,7 @@ public static class Compiler
         { "||", 1 },
         { "*", 1 },
         { "/", 1 },
+        { "%", 1 },
         { "+", 0 },
         { "-", 0 }
     };
@@ -490,6 +491,9 @@ public static class Compiler
             case "/":
                 return a / b;
 
+            case "%":
+                return a % b;
+
             case "+":
                 return a + b;
 
@@ -516,6 +520,7 @@ public static class Compiler
         var b = "";
         var code = "";
         var condition = "";
+        var argument = "";
 
         switch (name)
         {
@@ -695,8 +700,8 @@ public static class Compiler
 
                 throw new Exception("void");
 
-            case "print":
-                var argument = stack.Pop();
+            case "printLine":
+                argument = stack.Pop();
                 
                 if (argument.Contains('"'))
                     argument = argument.Replace("\"", "");
@@ -705,6 +710,18 @@ public static class Compiler
                     argument = argument.Replace("\'", "");
 
                 Console.WriteLine(argument);
+                throw new Exception("void");
+
+            case "print":
+                argument = stack.Pop();
+
+                if (argument.Contains('"'))
+                    argument = argument.Replace("\"", "");
+
+                if (argument.Contains('\''))
+                    argument = argument.Replace("\'", "");
+
+                Console.Write(argument);
                 throw new Exception("void");
 
             case "read":

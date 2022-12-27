@@ -1,4 +1,27 @@
 import(Math)
-import(Random)
 
-print(round(rand(1; 10); 0))
+func("void"; "convert"; "num(a; {0})"; "num(b; {0})"; {
+	array("num"; tab; 10000)
+	num(n; 0)
+	
+	while ("&a > 0" {
+		set(&a % &b; tab; &n)
+		set(a; round(&a / &b; 0))
+		set(n; &n + 1)
+	})
+
+	num(i; &n - 1)
+
+	while ("&i >= 0"; {
+		print(get(&i; tab))
+		set(i; &i - 1)
+	})
+})
+
+print("Podaj liczbe:  ")
+num(a; read(line))
+
+print("Podaj system [2 - 9]:  ")
+num(b; read(line))
+
+exec(&a; &b; convert)
