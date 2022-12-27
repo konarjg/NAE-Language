@@ -69,6 +69,7 @@ public static class Compiler
     private static List<string> DataTypes = new() { "num", "text", "char", "flag" };
     private static List<string> Functions = new() { "array", "exec", "func", "while", "if", "elseif", "else", "equals", "get", "set", "print", "read" };
     private static List<string> Operators = new() { "<", ">", "<=", ">=", "==", "!=", "^^", "||", "&", "^", "*", "/", "+", "-" };
+    private static List<string> KeyWords = new() { "break", "continue" };
 
     private static Dictionary<string, int> ExecutionOrder = new()
     {
@@ -89,11 +90,13 @@ public static class Compiler
     };
 
     private static bool LastConditionFalse;
+    private static List<bool> BreakLoop = new();
+    private static List<bool> ContinueLoop = new();
+    private static int CurrentLoop = -1;
 
     private static List<Variable> Variables = new();
     private static List<Function> CustomFunctions = new();
     private static List<Variable[]> Arrays = new();
-    private static bool ConditionalCode = false;
 
     public static Queue<string> ToRPN(string code)
     {
@@ -114,6 +117,10 @@ public static class Compiler
                     break;
 
                 case string s when s.Contains('"') || s.Contains('\'') || s.Contains('{'):
+                    output.Enqueue(s);
+                    break;
+
+                case string s when KeyWords.Contains(s):
                     output.Enqueue(s);
                     break;
 
@@ -197,6 +204,18 @@ public static class Compiler
 
                 case string s when float.TryParse(s, out number):
                     stack.Push(s);
+                    break;
+
+                case string s when KeyWords.Contains(s):
+                    try
+                    {
+                        ExecuteFunction(s, ref stack);
+                    }
+                    catch (Exception e)
+                    {
+                        if (e.Message == "break" || e.Message == "Continue")
+                            return;
+                    }
                     break;
 
                 case string s when Operators.Contains(s):
@@ -283,6 +302,18 @@ public static class Compiler
 
                 case string s when float.TryParse(s, out number):
                     stack.Push(s);
+                    break;
+
+                case string s when KeyWords.Contains(s):
+                    try
+                    {
+                        ExecuteFunction(s, ref stack);
+                    }
+                    catch (Exception e)
+                    {
+                        if (e.Message == "break" || e.Message == "Continue")
+                            return;
+                    }
                     break;
 
                 case string s when Operators.Contains(s):
@@ -400,6 +431,16 @@ public static class Compiler
         throw new Exception("WRONG OPERATOR!");
     }
 
+    private static void BreakCurrentLoop()
+    {
+        BreakLoop[CurrentLoop] = true;
+    }
+
+    private static void ContinueCurrentLoop()
+    {
+        ContinueLoop[CurrentLoop] = true;
+    }
+
     public static dynamic ExecuteFunction(string name, ref Stack<string> stack)
     {
         var a = "";
@@ -409,6 +450,14 @@ public static class Compiler
 
         switch (name)
         {
+            case "break":
+                BreakCurrentLoop();
+                throw new Exception("break");
+
+            case "continue":
+                ContinueCurrentLoop();
+                throw new Exception("continue");
+
             case "array":
                 var length = int.Parse(stack.Pop());
                 var arrayName = stack.Pop();
@@ -471,6 +520,10 @@ public static class Compiler
                 code = stack.Pop();
                 condition = stack.Pop();
                 var c = "1";
+                var keyword = "";
+                ++CurrentLoop;
+                BreakLoop.Add(false);
+                ContinueLoop.Add(false);
 
                 do
                 {
@@ -481,9 +534,21 @@ public static class Compiler
                         break;
 
                     Compile(code.Remove(0, 1).Remove(code.Length - 2));
+
+                    if (BreakLoop[CurrentLoop])
+                        break;
+
+                    if (ContinueLoop[CurrentLoop])
+                    {
+                        ContinueLoop[CurrentLoop] = false;
+                        continue;
+                    }
                 }
                 while (c == "1");
 
+                BreakLoop.RemoveAt(CurrentLoop);
+                ContinueLoop.RemoveAt(CurrentLoop);
+                --CurrentLoop;
                 throw new Exception("void");
 
 
@@ -493,7 +558,7 @@ public static class Compiler
 
                 if (condition == "1")
                 {
-                    Compile(code.Remove(0, 1).Remove(code.Length - 2));
+                    Compile(code.Remove(0, 1).Remove(code.Length - 2), ref stack);
                     LastConditionFalse = false;
                 }
                 else
@@ -510,7 +575,7 @@ public static class Compiler
 
                 if (condition == "1")
                 {
-                    Compile(code.Remove(0, 1).Remove(code.Length - 2));
+                    Compile(code.Remove(0, 1).Remove(code.Length - 2), ref stack);
                     LastConditionFalse = false;
                 }
                 else
@@ -523,7 +588,7 @@ public static class Compiler
                     throw new Exception("void");
 
                 code = stack.Pop();
-                Compile(code.Remove(0, 1).Remove(code.Length - 2));
+                Compile(code.Remove(0, 1).Remove(code.Length - 2), ref stack);
 
                 throw new Exception("void");
 
