@@ -33,7 +33,12 @@ public class Variable
                 return Value;
 
             case "char":
-                return char.Parse(Value);
+                var x = 0f;
+
+                if (float.TryParse(Value, out x))
+                    return (char)x;
+
+                return "'" + Value + "'";
 
             case "flag":
                 return bool.Parse(Value);
@@ -68,7 +73,7 @@ public static class Compiler
 {
     private static List<string> DataTypes = new() { "num", "text", "char", "flag" };
     private static List<string> Functions = new() { "array", "exec", "func", "while", "if", "elseif", "else", "equals", "get", "set", "printLine", "print", "read" };
-    private static List<string> Operators = new() { "<", ">", "<=", ">=", "==", "!=", "^^", "||", "&", "^", "*", "/", "%", "+", "-" };
+    private static List<string> Operators = new() { "<", ">", "<=", ">=", "==", "!=", "^^", "||", "&", "^", "*", "/", ":", "%", "+", "-" };
     private static List<string> KeyWords = new() { "break", "continue" };
 
     private static List<Library> Libraries = new() { new Math(), new Random() };
@@ -86,6 +91,7 @@ public static class Compiler
         { "||", 1 },
         { "*", 1 },
         { "/", 1 },
+        { ":", 1 },
         { "%", 1 },
         { "+", 0 },
         { "-", 0 }
@@ -131,12 +137,8 @@ public static class Compiler
                     output.Enqueue(s);
                     break;
 
-                case string s when s.Contains('"') || s.Contains('{'):
+                case string s when s.Contains('\'') || s.Contains('"') || s.Contains('{'):
                     output.Enqueue(s);
-                    break;
-
-                case string s when s.Contains('\''):
-                    output.Enqueue(s.Replace("'", ""));
                     break;
 
                 case string s when KeyWords.Contains(s):
@@ -262,7 +264,28 @@ public static class Compiler
                             a = stack.Pop();
                             b = stack.Pop();
 
+                            if (a.Contains("'"))
+                            {
+                                if (b.Contains("'"))
+                                    stack.Push(ExecuteOperation(b.Replace("'", "")[0], a.Replace("'", "")[0], token).ToString());
+                                else
+                                    stack.Push(ExecuteOperation(float.Parse(b), a.Replace("'", "")[0], token).ToString());
+
+                                break;
+                            }
+
+                            if (b.Contains("'"))
+                            {
+                                if (a.Contains("'"))
+                                    stack.Push(ExecuteOperation(b.Replace("'", "")[0], a.Replace("'", "")[0], token).ToString());
+                                else
+                                    stack.Push(ExecuteOperation(b.Replace("'", "")[0], float.Parse(a), token).ToString());
+
+                                break;
+                            }
+
                             stack.Push(ExecuteOperation(float.Parse(b), float.Parse(a), token).ToString());
+
                             break;
                     }
 
@@ -387,7 +410,28 @@ public static class Compiler
                             a = stack.Pop();
                             b = stack.Pop();
 
+                            if (a.Contains("'"))
+                            {
+                                if (b.Contains("'"))
+                                    stack.Push(ExecuteOperation(b.Replace("'", "")[0], a.Replace("'", "")[0], token).ToString());
+                                else
+                                    stack.Push(ExecuteOperation(float.Parse(b), a.Replace("'", "")[0], token).ToString());
+
+                                break;
+                            }
+
+                            if (b.Contains("'"))
+                            {
+                                if (a.Contains("'"))
+                                    stack.Push(ExecuteOperation(b.Replace("'", "")[0], a.Replace("'", "")[0], token).ToString());
+                                else
+                                    stack.Push(ExecuteOperation(b.Replace("'", "")[0], float.Parse(a), token).ToString());
+
+                                break;
+                            }
+
                             stack.Push(ExecuteOperation(float.Parse(b), float.Parse(a), token).ToString());
+
                             break;
                     }
 
@@ -458,7 +502,7 @@ public static class Compiler
         }
     }
 
-    public static float ExecuteOperation(float a, float b, string operand)
+    public static dynamic ExecuteOperation(dynamic a, dynamic b, string operand)
     {
         switch (operand)
         {
@@ -494,6 +538,9 @@ public static class Compiler
 
             case "/":
                 return a / b;
+
+            case ":":
+                return (int)a / (int)b;
 
             case "%":
                 return a % b;
@@ -550,7 +597,7 @@ public static class Compiler
                 throw new Exception("void");
 
             case "exec":
-                a = stack.Pop();
+                a = stack.Pop().Replace("\"", "");
 
                 var func = CustomFunctions.Find(var => var.Name == a);
 
