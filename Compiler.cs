@@ -131,8 +131,12 @@ public static class Compiler
                     output.Enqueue(s);
                     break;
 
-                case string s when s.Contains('"') || s.Contains('\'') || s.Contains('{'):
+                case string s when s.Contains('"') || s.Contains('{'):
                     output.Enqueue(s);
+                    break;
+
+                case string s when s.Contains('\''):
+                    output.Enqueue(s.Replace("'", ""));
                     break;
 
                 case string s when KeyWords.Contains(s):
