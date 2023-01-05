@@ -39,7 +39,10 @@ public static class Parser
 
         for (int i = 0; i < tokens.Length; ++i)
         {
-            if (tokens[i] != "" && tokens[i] != " ")
+            if (tokens[i] == "" && stringFound && firstChar != '}')
+                token += " ";
+
+            if (tokens[i] != "")
             {
                 if (stringFound)
                 {
@@ -57,7 +60,7 @@ public static class Parser
                             }
                             else
                             {
-                                token = token.Remove(token.Length - 1) + tokens[i];
+                                token = token.Remove(token.Length - 1) + tokens[i] + " ";
                                 result.Enqueue(token);
                                 stringFound = false;
                                 token = "";

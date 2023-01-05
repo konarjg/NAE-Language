@@ -72,7 +72,7 @@ public class Function
 public static class Compiler
 {
     private static List<string> DataTypes = new() { "num", "text", "char", "flag" };
-    private static List<string> Functions = new() { "array", "exec", "func", "while", "if", "elseif", "else", "equals", "get", "set", "printLine", "print", "read" };
+    private static List<string> Functions = new() { "join", "array", "exec", "func", "while", "if", "elseif", "else", "equals", "get", "set", "printLine", "print", "read" };
     private static List<string> Operators = new() { "<", ">", "<=", ">=", "==", "!=", "^^", "||", "&", "^", "*", "/", ":", "%", "+", "-" };
     private static List<string> KeyWords = new() { "break", "continue" };
 
@@ -575,6 +575,14 @@ public static class Compiler
 
         switch (name)
         {
+            case "join":
+                b = "";
+
+                while (stack.TryPop(out a))
+                    b = a + b;
+
+                return b;
+
             case "break":
                 BreakCurrentLoop();
                 throw new Exception("break");
